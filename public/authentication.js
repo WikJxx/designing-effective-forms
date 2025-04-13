@@ -7,7 +7,6 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-// Konfiguracja Firebase z Twojego projektu
 const firebaseConfig = {
   apiKey: "AIzaSyAhHt4CRMcysvrZD9ewkDwIMy51rCw77Ak",
   authDomain: "form-35d15.firebaseapp.com",
@@ -18,24 +17,25 @@ const firebaseConfig = {
   measurementId: "G-FFFCLYQGHH"
 };
 
-// Inicjalizacja Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: "select_account",
+});
 
 const signInButton = document.getElementById("signInButton");
 const signOutButton = document.getElementById("signOutButton");
 
-// Logowanie
 const userSignIn = async () => {
   signInWithPopup(auth, provider)
     .then((result) => {
       const user = result.user;
-      console.log(user);
+      console.log("Zalogowany:", user);
 
-      // Wstrzykiwanie danych użytkownika do formularza
-      document.getElementById("firstName").value = user.displayName?.split(" ")[0] || "";
-      document.getElementById("lastName").value = user.displayName?.split(" ")[1] || "";
+      const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+      document.getElementById("firstName").value = firstName;
+      document.getElementById("lastName").value = lastName;
       document.getElementById("email").value = user.email || "";
     })
     .catch((error) => {
@@ -43,7 +43,6 @@ const userSignIn = async () => {
     });
 };
 
-// Wylogowanie
 const userSignOut = async () => {
   signOut(auth)
     .then(() => {
@@ -54,14 +53,16 @@ const userSignOut = async () => {
     });
 };
 
-// Obserwator zmiany stanu
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    alert("Zalogowano przez Google!");
-    console.log("Zalogowany użytkownik:", user);
+    console.log("Użytkownik zalogowany:", user);
+    // W razie gdyby logowanie odbyło się wcześniej
+    const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+    document.getElementById("firstName").value = firstName;
+    document.getElementById("lastName").value = lastName;
+    document.getElementById("email").value = user.email || "";
   }
 });
 
-// Podpięcie przycisków
 signInButton.addEventListener("click", userSignIn);
 signOutButton.addEventListener("click", userSignOut);
