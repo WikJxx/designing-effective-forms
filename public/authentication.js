@@ -2,11 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/fireba
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
+// Konfiguracja Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAhHt4CRMcysvrZD9ewkDwIMy51rCw77Ak",
   authDomain: "form-35d15.firebaseapp.com",
@@ -20,6 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+
 provider.setCustomParameters({
   prompt: "select_account",
 });
@@ -27,42 +30,48 @@ provider.setCustomParameters({
 const signInButton = document.getElementById("signInButton");
 const signOutButton = document.getElementById("signOutButton");
 
-const userSignIn = async () => {
-  signInWithPopup(auth, provider)
-    .then((result) => {
-      const user = result.user;
-      console.log("Zalogowany:", user);
+const injectUserData = (user) => {
+  const firstNameInput = document.getElementById("firstName");
+  const lastNameInput = document.getElementById("lastName");
+  const emailInput = document.getElementById("email");
 
-      const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-      document.getElementById("firstName").value = firstName;
-      document.getElementById("lastName").value = lastName;
-      document.getElementById("email").value = user.email || "";
-    })
-    .catch((error) => {
-      console.error("Błąd logowania:", error);
-    });
+  const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+  if (firstNameInput) firstNameInput.value = firstName;
+  if (lastNameInput) lastNameInput.value = lastName;
+  if (emailInput) emailInput.value = user.email || "";
 };
 
-const userSignOut = async () => {
-  signOut(auth)
-    .then(() => {
-      alert("Zostałeś wylogowany!");
-    })
-    .catch((error) => {
-      console.error("Błąd wylogowania:", error);
-    });
-};
+// 🔁 Logowanie z przekierowaniem
+signInButton.addEventListener("click", () => {
+  signInWithRedirect(auth, provider);
+});
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log("Użytkownik zalogowany:", user);
-    // W razie gdyby logowanie odbyło się wcześniej
-    const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-    document.getElementById("firstName").value = firstName;
-    document.getElementById("lastName").value = lastName;
-    document.getElementById("email").value = user.email || "";
+// 🔚 Wylogowanie
+signOutButton.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    alert("Zostałeś wylogowany!");
+  } catch (error) {
+    console.error("Błąd wylogowania:", error);
   }
 });
 
-signInButton.addEventListener("click", userSignIn);
-signOutButton.addEventListener("click", userSignOut);
+// 🧠 Odbiór danych po przekierowaniu
+getRedirectResult(auth)
+  .then((result) => {
+    if (result && result.user) {
+      console.log("Zalogowano przez redirect:", result.user);
+      injectUserData(result.user);
+    }
+  })
+  .catch((error) => {
+    console.error("Błąd po przekierowaniu:", error);
+  });
+
+// 👁️ Obserwator stanu użytkownika
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Użytkownik zalogowany:", user);
+    injectUserData(user);
+  }
+});
