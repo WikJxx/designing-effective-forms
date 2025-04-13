@@ -8,7 +8,7 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-// Konfiguracja Firebase
+
 const firebaseConfig = {
   apiKey: "AIzaSyAhHt4CRMcysvrZD9ewkDwIMy51rCw77Ak",
   authDomain: "form-35d15.firebaseapp.com",
@@ -19,7 +19,6 @@ const firebaseConfig = {
   measurementId: "G-FFFCLYQGHH"
 };
 
-// Inicjalizacja Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
@@ -31,11 +30,9 @@ provider.setCustomParameters({
   prompt: "select_account"
 });
 
-// Przycisk logowania/wylogowania
 const signInButton = document.getElementById("signInButton");
 const signOutButton = document.getElementById("signOutButton");
 
-// Ukrywanie/pokazywanie przycisków
 const toggleButtons = (user) => {
   if (user) {
     signInButton.style.display = "none";
@@ -46,7 +43,6 @@ const toggleButtons = (user) => {
   }
 };
 
-// Wypełnianie formularza danymi z konta Google
 const injectUserData = (user) => {
   if (!user) return;
   console.log("USER:", user);
@@ -56,13 +52,11 @@ const injectUserData = (user) => {
   document.getElementById("email").value = user.email || "";
 };
 
-// Obsługa logowania
 signInButton.addEventListener("click", () => {
   sessionStorage.setItem("redirecting", "true");
   signInWithRedirect(auth, provider);
 });
 
-// Obsługa wylogowania
 signOutButton.addEventListener("click", async () => {
   try {
     await signOut(auth);
@@ -86,12 +80,11 @@ getRedirectResult(auth)
     console.error("Błąd po redirectcie:", error);
   });
 
-onAuthStateChanged(auth, (user) => {
-  const wasRedirecting = sessionStorage.getItem("redirecting") === "true";
-  if (user && !wasRedirecting) {
-    injectUserData(user);
-  }
-  toggleButtons(user);
-});
+  onAuthStateChanged(auth, (user) => {
+    const wasRedirecting = sessionStorage.getItem("redirecting") === "true";
+    if (user && !wasRedirecting) {
+      injectUserData(user);
+    }
+    toggleButtons(user);
+  });
 
-toggleButtons(null);
