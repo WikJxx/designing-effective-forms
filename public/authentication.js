@@ -21,6 +21,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+signOut(auth); // Wymuszone wylogowanie zawsze przy wejściu
+window.localStorage.clear();
+
+import { setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+setPersistence(auth, browserSessionPersistence)
+  .then(() => {
+    console.log("Ustawiono pamięć sesyjną");
+  })
+  .catch((error) => {
+    console.error("Błąd ustawiania pamięci sesyjnej:", error);
+  });
 const provider = new GoogleAuthProvider();
 
 provider.addScope("email");
@@ -87,4 +99,3 @@ getRedirectResult(auth)
     }
     toggleButtons(user);
   });
-
