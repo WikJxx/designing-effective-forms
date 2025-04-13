@@ -5,7 +5,7 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut,
-  onAuthStateChanged,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 // Konfiguracja Firebase
@@ -19,59 +19,79 @@ const firebaseConfig = {
   measurementId: "G-FFFCLYQGHH"
 };
 
+// Inicjalizacja Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+provider.addScope("email");
+provider.addScope("profile");
+
 provider.setCustomParameters({
-  prompt: "select_account",
+  prompt: "select_account"
 });
 
+// Przycisk logowania/wylogowania
 const signInButton = document.getElementById("signInButton");
 const signOutButton = document.getElementById("signOutButton");
 
-const injectUserData = (user) => {
-  const firstNameInput = document.getElementById("firstName");
-  const lastNameInput = document.getElementById("lastName");
-  const emailInput = document.getElementById("email");
-
-  const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
-  if (firstNameInput) firstNameInput.value = firstName;
-  if (lastNameInput) lastNameInput.value = lastName;
-  if (emailInput) emailInput.value = user.email || "";
+// Ukrywanie/pokazywanie przycisków
+const toggleButtons = (user) => {
+  if (user) {
+    signInButton.style.display = "none";
+    signOutButton.style.display = "inline-block";
+  } else {
+    signInButton.style.display = "inline-block";
+    signOutButton.style.display = "none";
+  }
 };
 
-// 🔁 Logowanie z przekierowaniem
+// Wypełnianie formularza danymi z konta Google
+const injectUserData = (user) => {
+  if (!user) return;
+  console.log("USER:", user);
+  const [firstName, lastName] = user.displayName?.split(" ") || ["", ""];
+  document.getElementById("firstName").value = firstName;
+  document.getElementById("lastName").value = lastName;
+  document.getElementById("email").value = user.email || "";
+};
+
+// Obsługa logowania
 signInButton.addEventListener("click", () => {
+  sessionStorage.setItem("redirecting", "true");
   signInWithRedirect(auth, provider);
 });
 
-// 🔚 Wylogowanie
+// Obsługa wylogowania
 signOutButton.addEventListener("click", async () => {
   try {
     await signOut(auth);
     alert("Zostałeś wylogowany!");
-  } catch (error) {
-    console.error("Błąd wylogowania:", error);
+    sessionStorage.removeItem("redirecting");
+    toggleButtons(null);
+  } catch (err) {
+    console.error("Błąd wylogowania:", err);
   }
 });
 
-// 🧠 Odbiór danych po przekierowaniu
 getRedirectResult(auth)
   .then((result) => {
     if (result && result.user) {
-      console.log("Zalogowano przez redirect:", result.user);
       injectUserData(result.user);
+      toggleButtons(result.user);
     }
+    sessionStorage.removeItem("redirecting");
   })
   .catch((error) => {
-    console.error("Błąd po przekierowaniu:", error);
+    console.error("Błąd po redirectcie:", error);
   });
 
-// 👁️ Obserwator stanu użytkownika
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log("Użytkownik zalogowany:", user);
+  const wasRedirecting = sessionStorage.getItem("redirecting") === "true";
+  if (user && !wasRedirecting) {
     injectUserData(user);
   }
+  toggleButtons(user);
 });
+
+toggleButtons(null);
